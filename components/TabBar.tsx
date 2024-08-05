@@ -1,19 +1,60 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  LayoutChangeEvent,
+} from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Feather } from "@expo/vector-icons";
+import TabBarButton from "./TabBarButton";
+import { useState } from "react";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+
+import { RouteName } from "./types";
 
 export default function TabBar({
   state,
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-  const icons = {
-    index: (index: any) => <Feather name="home" size={24} color="#222" />,
-    explore: (index: any) => <Feather name="compass" size={24} color="#222" />,
-    profile: (index: any) => <Feather name="user" size={24} color="#222" />,
+  const [dimensions, setDimensions] = useState({ height: 20, width: 100 });
+
+  const buttonWidth = dimensions.width / state.routes.length;
+
+  const onTabBarLayout = (e: LayoutChangeEvent) => {
+    setDimensions({
+      height: e.nativeEvent.layout.height,
+      width: e.nativeEvent.layout.width,
+    });
   };
+
+  const tabPositionX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: tabPositionX.value }],
+    };
+  });
+
   return (
-    <View style={styles.tabBar}>
+    <View onLayout={onTabBarLayout} style={styles.tabBar}>
+      <Animated.View
+        style={[
+          animatedStyle,
+          {
+            position: "absolute",
+            backgroundColor: "#723FEB",
+            borderRadius: 30,
+            marginHorizontal: 12,
+            height: dimensions.height - 15,
+            width: buttonWidth - 25,
+          },
+        ]}
+      />
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label =
@@ -26,6 +67,9 @@ export default function TabBar({
         const isFocused = state.index === index;
 
         const onPress = () => {
+          tabPositionX.value = withSpring(buttonWidth * index, {
+            duration: 1500,
+          });
           const event = navigation.emit({
             type: "tabPress",
             target: route.key,
@@ -45,23 +89,32 @@ export default function TabBar({
         };
 
         return (
-          <TouchableOpacity
+          <TabBarButton
             key={route.name}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            testID={options.tabBarTestID}
             onPress={onPress}
             onLongPress={onLongPress}
-            style={styles.tabBarItem}
-          >
-            {icons[route.name]({
-              color: isFocused ? "#673ab7" : "#222",
-            })}
-            <Text style={{ color: isFocused ? "#673ab7" : "#222" }}>
-              {label}
-            </Text>
-          </TouchableOpacity>
+            isFocused={isFocused}
+            routeName={route.name as RouteName}
+            color={isFocused ? "#fff" : "#222"}
+            label={label}
+          />
+          //   <TouchableOpacity
+          //     key={route.name}
+          //     accessibilityRole="button"
+          //     accessibilityState={isFocused ? { selected: true } : {}}
+          //     accessibilityLabel={options.tabBarAccessibilityLabel}
+          //     testID={options.tabBarTestID}
+          //     onPress={onPress}
+          //     onLongPress={onLongPress}
+          //     style={styles.tabBarItem}
+          //   >
+          //     {icons[route.name]({
+          //       color: isFocused ? "#673ab7" : "#222",
+          //     })}
+          //     <Text style={{ color: isFocused ? "#673ab7" : "#222" }}>
+          //       {label}
+          //     </Text>
+          //   </TouchableOpacity>
         );
       })}
     </View>
@@ -85,20 +138,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     shadowOffset: { width: 1, height: 10 },
   },
-  tabBarItem: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 5,
-    // padding: 10,
-    // borderWidth: 1,
-    // borderColor: "#ddd",
-    // borderRadius: 5,
-    // elevation: 1,
-    // shadowColor: "#000",
-    // shadowOpacity: 0.1,
-    // shadowRadius: 2,
-    // shadowOffset: { width: 1, height: 1 },
-    // marginHorizontal: 10,
-  },
+  //   tabBarItem: {
+  //     flex: 1,
+  //     justifyContent: "center",
+  //     alignItems: "center",
+  //     gap: 5,
+  //     // padding: 10,
+  //     // borderWidth: 1,
+  //     // borderColor: "#ddd",
+  //     // borderRadius: 5,
+  //     // elevation: 1,
+  //     // shadowColor: "#000",
+  //     // shadowOpacity: 0.1,
+  //     // shadowRadius: 2,
+  //     // shadowOffset: { width: 1, height: 1 },
+  //     // marginHorizontal: 10,
+  //   },
 });
